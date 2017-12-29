@@ -1,0 +1,17 @@
+PODS:
+  - Charts (3.0.4):
+    - Charts/Core (= 3.0.4)
+  - Charts/Core (3.0.4)
+  - Gifu (2.0.1)
+
+DEPENDENCIES:
+  - Charts
+  - Gifu
+
+SPEC CHECKSUMS:
+  Charts: 0705898046257443f0afbbc3179f4b67507b6e48
+  Gifu: 90bd26ea4d65f8322c4cca8cbb0ca1418f5457ad
+
+PODFILE CHECKSUM: 71e7f4d1607acb137fea0f3d6f7716de10ea0c62
+
+COCOAPODS: 1.3.1

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="13168.3" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina4_7" orientation="portrait">
+        <adaptation id="fullscreen"/>
+    </device>
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="13147.4"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner" customClass="TopBarView" customModule="KickAss" customModuleProvider="target">
+            <connections>
+                <outlet property="contentView" destination="nba-sv-4tV" id="W8r-b3-4fd"/>
+            </connections>
+        </placeholder>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="nba-sv-4tV">
+            <rect key="frame" x="0.0" y="0.0" width="375" height="30"/>
+            <subviews>
+                <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="bluetoothIcon" translatesAutoresizingMaskIntoConstraints="NO" id="ZSp-TM-mmW">
+                    <rect key="frame" x="20" y="5" width="20" height="20"/>
+                    <constraints>
+                        <constraint firstAttribute="width" constant="20" id="BUO-6P-Z94"/>
+                        <constraint firstAttribute="height" constant="20" id="aZh-5W-7RU"/>
+                    </constraints>
+                </imageView>
+                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Device Connected" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ytK-l3-gS8">
+                    <rect key="frame" x="48" y="6.5" width="123" height="17"/>
+                    <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="14"/>
+                    <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                    <nil key="highlightedColor"/>
+                </label>
+            </subviews>
+            <color key="backgroundColor" white="0.33333333329999998" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+            <constraints>
+                <constraint firstItem="ytK-l3-gS8" firstAttribute="centerY" secondItem="ZSp-TM-mmW" secondAttribute="centerY" id="3xT-pS-A6M"/>
+                <constraint firstItem="ZSp-TM-mmW" firstAttribute="leading" secondItem="nba-sv-4tV" secondAttribute="leading" constant="20" id="8Bf-HN-dLT"/>
+                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="ytK-l3-gS8" secondAttribute="trailing" constant="20" symbolic="YES" id="aE9-eE-xXO"/>
+                <constraint firstItem="ytK-l3-gS8" firstAttribute="leading" secondItem="ZSp-TM-mmW" secondAttribute="trailing" constant="8" id="bIX-2v-nGh"/>
+                <constraint firstItem="ZSp-TM-mmW" firstAttribute="centerY" secondItem="nba-sv-4tV" secondAttribute="centerY" id="miZ-Va-xGG"/>
+            </constraints>
+            <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
+            <viewLayoutGuide key="safeArea" id="zM6-Zf-lcO"/>
+            <point key="canvasLocation" x="29.5" y="-318"/>
+        </view>
+    </objects>
+    <resources>
+        <image name="bluetoothIcon" width="96" height="96"/>
+    </resources>
+</document>
