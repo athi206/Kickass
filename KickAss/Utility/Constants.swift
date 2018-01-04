@@ -36,3 +36,10 @@ struct TEMP_UNIT {
     static let celcius = "°C"
     static let farenheat = "°F"
 }
+
+struct FRIDGETYPE {
+    static let leftOff = "01"
+    static let rightOff = "02"
+    static let Dual = "00"
+    static let single = "03"
+}

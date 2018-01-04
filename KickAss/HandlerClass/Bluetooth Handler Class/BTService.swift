@@ -10,8 +10,9 @@ import Foundation
 import CoreBluetooth
 
 /* Services & Characteristics UUIDs */
-let BLEServiceUUID = CBUUID(string: "FFE0")
-let PositionCharUUID = CBUUID(string: "FFE1")
+let BLEServiceUUID = CBUUID(string: "1000")
+let writePositionCharUUID = CBUUID(string: "1001")
+let readPositionCharUUID = CBUUID(string: "1002")
 let BLEServiceChangedStatusNotification = "kBLEServiceChangedStatusNotification"
 let BLEDeviceDetectedNotification = "kBLEDeviceDetectedNotification"
 
@@ -50,7 +51,6 @@ class BTService: NSObject, CBPeripheralDelegate {
   // Mark: - CBPeripheralDelegate
   
   func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-    let uuidsForBTService: [CBUUID] = [PositionCharUUID]
     
     if (peripheral != self.peripheral) {
       // Wrong Peripheral
@@ -86,44 +86,58 @@ class BTService: NSObject, CBPeripheralDelegate {
     if let characteristics = service.characteristics {
       for characteristic in characteristics {
         
-        print("CHARECTERISTICS : \(characteristic.value?.hexadecimal() ?? "")")
-
-       
-             if characteristic.uuid == PositionCharUUID {
+        if characteristic.uuid == writePositionCharUUID {
                 self.positionCharacteristic = (characteristic)
-                peripheral.setNotifyValue(true, for: characteristic)
-                peripheral.readValue(for: characteristic)
                 self.sendBTServiceNotificationWithIsBluetoothConnected(true)
-            }
-        
+        }
+        else if characteristic.uuid == readPositionCharUUID {
+            peripheral.setNotifyValue(true, for: characteristic)
+            peripheral.readValue(for: characteristic)
+        }
       }
     }
   }
   
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
         
-        if characteristic.uuid == PositionCharUUID {
+        if characteristic.uuid == readPositionCharUUID {
             
             guard let hexString = characteristic.value?.hexadecimal() else {
                 return
             }
             
-            print(hexString)
-            
             if Utility.shared.isReadingTemperatureCurve {
                
-                if hexString.prefix(2) == "68" {
-                    stri = ""
+                if hexString.prefix(2) == "68" || hexString.range(of: "ec68") != nil || hexString.suffix(2) == "ec" {
+                    
+                    if hexString.range(of: "ec68") != nil {
+                        
+                        let stageString = hexString.components(separatedBy: "ec68")
+                        
+                        stri = stri + stageString[0] + "ec"
+ 
+                        delegate?.pheriperalValue(hexString: stri)
+                        
+                        stri = "68" + stageString[1]
+                    }
+                    else if hexString.prefix(2) == "68" && hexString.suffix(2) == "ec" {
+                        delegate?.pheriperalValue(hexString: hexString)
+                    }
+                    else if hexString.prefix(2) == "68" {
+                        stri = hexString
+                    }
+                    else if hexString.suffix(2) == "ec" {
+                        stri = stri + hexString
+                        delegate?.pheriperalValue(hexString: stri)
+                    }
                 }
-                
-                stri = stri + hexString
-                
-                if hexString.suffix(2) == "ec" {
-                    delegate?.pheriperalValue(hexString: stri)
+                else {
+                    stri = stri + hexString
                 }
             }
-            else {
-                if hexString.count > 10 && hexString.count <= 40 {
+            else if !Utility.shared.isSettingFridgeType  {
+                print("Output : \(hexString)")
+                if hexString.prefix(2) == "68" && hexString.suffix(2) == "ec" && hexString.count == 38 {
                     delegate?.pheriperalValue(hexString: hexString)
                 }
             }

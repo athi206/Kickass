@@ -17,6 +17,9 @@ class ViewController: UIViewController {
 
     @IBOutlet weak var deviceListTableview: UITableView!
    
+    var bleManager : BLEManager!
+    
+    
     override func viewWillAppear(_ animated: Bool) {
         // Start the Bluetooth discovery process
         deviceListTableview.reloadData()
@@ -25,6 +28,8 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+       // bleManager = BLEManager.defa
         
         Utility.shared.delegate = self
 
@@ -78,11 +83,12 @@ extension ViewController : didUpdateValueDelegate {
             
             if hexArray[8] != "9b" && hexArray[8] != "9a" {
                 
+                Utility.shared.connectedDevice.fridgeType = hexArray[2]
                 Utility.shared.connectedDevice.rightBinCurrentTemp = hexArray[9].getTemperatureInCelcius()
                 Utility.shared.connectedDevice.leftBinCurrentTemp = hexArray[10].getTemperatureInCelcius()
                 Utility.shared.connectedDevice.rightBinTemp = hexArray[11].getTemperatureInCelcius()
                 Utility.shared.connectedDevice.leftBinTemp = hexArray[12].getTemperatureInCelcius()
-                Utility.shared.connectedDevice.voltage = "\(hexArray[13]).\(hexArray[14])V"
+                Utility.shared.connectedDevice.voltage = "\(hexArray[13].hexToDecimalValue()).\(hexArray[14].hexToDecimalValue())V"
                 Utility.shared.connectedDevice.splitAndSaveDeviceParameter(value: hexArray[15])
                 
                 let vc = Utility.shared.viewControllerWithName(identifier: StoryBoard.HomeViewControllerIdentifier) as? HomeViewController

@@ -37,9 +37,13 @@ extension String {
     
     func getTemperatureInCelcius() -> Int
     {
-        let decimalValue = self.hexToDecimalValue() - "32".hexToDecimalValue()
-        
-        return  decimalValue
+        if self == "00" {
+            return Int(self) ?? 0
+        }
+        else {
+            let decimalValue = self.hexToDecimalValue() - "32".hexToDecimalValue()
+            return  decimalValue
+        }
     }
     
     func toLengthOf(length:Int) -> String {

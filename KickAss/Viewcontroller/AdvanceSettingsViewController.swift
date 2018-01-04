@@ -25,16 +25,21 @@ class AdvanceSettingsViewController: UIViewController {
     @IBOutlet weak var FarenheatButton: UIButton!
     @IBOutlet weak var celciusButton: UIButton!
     @IBOutlet weak var deviceStatusLabel: UILabel!
-
+    @IBOutlet weak var rightBinHeightConstraint: NSLayoutConstraint!
+    
     private var tempArray : [String] = []
     private var leftBinArray : [Float] = []
     private var rightBinArray : [Float] = []
     private var voltageArray : [Float] = []
-    private var hexString = ""
+    private var tempCurveArray : [String] = []
  
     override func viewDidLayoutSubviews() {
         celciusButton.layer.cornerRadius = celciusButton.frame.height/2
         FarenheatButton.layer.cornerRadius = celciusButton.frame.height/2
+        if Utility.shared.connectedDevice.fridgeType == FRIDGETYPE.single {
+            rightBinHeightConstraint.constant = -(rightBinChart.frame.height)
+            rightBinChart.isHidden = true
+        }
     }
     
     override func viewDidLoad() {
@@ -66,7 +71,7 @@ class AdvanceSettingsViewController: UIViewController {
         FarenheatButton.layer.borderWidth = 5.0
         FarenheatButton.layer.borderColor = UIColor.lightGray.withAlphaComponent(0.3).cgColor
 
-        MBProgressHUD.showAdded(to: self.view, animated: true)
+        MBProgressHUD.showAdded(to: self.view, animated: true,withText: "Fetching data, please wait for 30 secs...")
         Utility.shared.readTemperatureCurve(forViewController: self)
         
         NotificationCenter.default.addObserver(self, selector: #selector(HomeViewController.connectionChanged(_:)), name: NSNotification.Name(rawValue: BLEServiceChangedStatusNotification), object: nil)
@@ -138,15 +143,16 @@ extension AdvanceSettingsViewController : didUpdateValueDelegate {
         
         DispatchQueue.main.async {
             
-            self.hexString = hexString
+            print("TEMP CURVE : \(hexString)")
             
-                var trimmeredString = hexString.toLengthOf(length: 20)
+            self.tempCurveArray.append(hexString)
             
-                trimmeredString = trimmeredString.replacingOccurrences(of: "ff", with: "0")
-            
+            if self.tempCurveArray.count == 48 {
+                var trimmeredString = self.tempCurveArray[0]
+                trimmeredString = trimmeredString.replacingOccurrences(of: "ff", with: "00")
                 let hexArray = trimmeredString.formHexArr()
-                
-                self.split(hexArray: hexArray)
+                self.split(hexArray: Array((Array(hexArray.dropLast(2))).dropFirst(10)))
+            }
         }
     }
     
@@ -159,15 +165,18 @@ extension AdvanceSettingsViewController : didUpdateValueDelegate {
                     self.split(hexArray: Array(hexArray.dropFirst(4)))
                 }
                 else {
-                    
-                    if self.hexString.prefix(20).suffix(2) == "30" {
+                    if self.tempCurveArray.count == 0 {
                         MBProgressHUD.hide(for: self.view, animated: true)
-                        print(self.leftBinArray)
-                        print(self.rightBinArray)
-                        print(self.voltageArray)
-                        self.lineChart.data = self.formChartData(array: self.leftBinArray.reversed(), title: "LEFT BIN")
+                        self.lineChart.data = self.formChartData(array: self.leftBinArray.reversed(), title:  Utility.shared.connectedDevice.fridgeType == FRIDGETYPE.single ? "SINGLE BIN" : "LEFT BIN")
                         self.rightBinChart.data = self.formChartData(array: self.rightBinArray.reversed(), title: "RIGHT BIN")
                         self.voltageChart.data = self.formChartData(array: self.voltageArray.reversed(), title: "VOLTAGE")
+                    }
+                    else {
+                        var trimmeredString = self.tempCurveArray[0]
+                        trimmeredString = trimmeredString.replacingOccurrences(of: "ff", with: "0")
+                        let tempHexArray = trimmeredString.formHexArr()
+                        self.split(hexArray: Array((Array(tempHexArray.dropLast(2))).dropFirst(10)))
+                        self.tempCurveArray.remove(at: 0)
                     }
                 }
             }
@@ -224,8 +233,8 @@ extension AdvanceSettingsViewController : didUpdateValueDelegate {
             let leftBinTemp = array[0].getTemperatureInCelcius()
             let rightBinTemp = array[1].getTemperatureInCelcius()
 
-            leftBinArray.append(Float((leftBinTemp > 30 || leftBinTemp < -30) ? 0 : leftBinTemp))
-            rightBinArray.append(Float((rightBinTemp > 30 || rightBinTemp < -30) ? 0 : rightBinTemp))
+            leftBinArray.append(Float(leftBinTemp))
+            rightBinArray.append(Float(rightBinTemp))
             voltageArray.append(Float("\(Int(array[2]) ?? 0).\(Int(array[3]) ?? 0)") ?? 0)
             onCompletion(true)
         }

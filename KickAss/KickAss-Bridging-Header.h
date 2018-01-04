@@ -3,3 +3,6 @@
 //
 
 #import "MBProgressHUD.h"
+#import "DeviceInfo.h"
+#import "oad.h"
+#import "BLEManager.h"

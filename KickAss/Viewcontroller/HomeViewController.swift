@@ -25,19 +25,21 @@ class HomeViewController: UIViewController,UINavigationControllerDelegate {
     @IBOutlet weak var rightBinView: UIView!
     @IBOutlet weak var leftBinTempView: UIView!{
         didSet {
-            let tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(pushViewController(gestureRecognizer:)))
+            let tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(tapGestureDelegate(gestureRecognizer:)))
             leftBinTempView.addGestureRecognizer(tapRecognizer)
         }
     }
     @IBOutlet weak var rightBinTempView: UIView!{
         didSet {
-            let tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(pushViewController(gestureRecognizer:)))
+            let tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(tapGestureDelegate(gestureRecognizer:)))
             rightBinTempView.addGestureRecognizer(tapRecognizer)
         }
     }
     @IBOutlet weak var leftBinCurrentTemperature: UIView!
     @IBOutlet weak var leftBinCurrentTemperatureLabel: UILabel!
     @IBOutlet weak var rightBinCurrentTemperature: UIView!
+    @IBOutlet weak var singleBinCurrentTemperature: UIView!
+    @IBOutlet weak var singleBinCurrentTemperatureLabel: UILabel!
     @IBOutlet weak var rightBinCurrentTemperatureLabel: UILabel!
     @IBOutlet weak var batteryProtectionView: UIView!
     @IBOutlet weak var voltageLabel: UILabel!
@@ -45,12 +47,7 @@ class HomeViewController: UIViewController,UINavigationControllerDelegate {
     @IBOutlet weak var advancedSettingsView: UIView!
     @IBOutlet weak var singleFridgeView: UIView!
     @IBOutlet weak var fridgeHeightConstraint: NSLayoutConstraint!
-    @IBOutlet weak var singleFridgeTempView: UIView!{
-        didSet {
-            let tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(pushViewController(gestureRecognizer:)))
-            singleFridgeTempView.addGestureRecognizer(tapRecognizer)
-        }
-    }
+    @IBOutlet weak var singleFridgeTempView: UIView!
     @IBOutlet weak var leftBinUpButton: UIButton!
     @IBOutlet weak var leftBinDownButton: UIButton!
     @IBOutlet weak var rightBinUpButton: UIButton!
@@ -72,8 +69,11 @@ class HomeViewController: UIViewController,UINavigationControllerDelegate {
     @IBOutlet weak var rightBinImageView: GIFImageView!
     @IBOutlet weak var appVersionLabel: UILabel!
     @IBOutlet weak var inputTextView: UITextView!
+    @IBOutlet weak var leftBinStatusLabel: UILabel!
+    @IBOutlet weak var rightBinStatusLabel: UILabel!
+    @IBOutlet weak var singleBinImageView: GIFImageView!
     
-    //var autoRefreshTimer : Timer!
+    var autoRefreshTimer : Timer!
     
     override func viewDidLayoutSubviews() {
         
@@ -85,7 +85,7 @@ class HomeViewController: UIViewController,UINavigationControllerDelegate {
     override func viewWillAppear(_ animated: Bool) {
         if Utility.shared.connectedDevice.isConnected {
             DispatchQueue.main.async {
-                //self.autoRefreshTimer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(self.update), userInfo: nil, repeats: true)
+                self.autoRefreshTimer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(self.update), userInfo: nil, repeats: true)
             }
         }
     }
@@ -97,13 +97,13 @@ class HomeViewController: UIViewController,UINavigationControllerDelegate {
         
         fridgeNameTextFiled.text = Utility.shared.connectedDevice.name
         
-        if Utility.shared.connectedDevice.isSingleFridge {
+        if Utility.shared.connectedDevice.fridgeType == FRIDGETYPE.single {
             singleFridgeView.isHidden = false
             leftBinView.isHidden = true
             rightBinView.isHidden = true
-            fridgeHeightConstraint.constant = -60
+            fridgeHeightConstraint.constant = -80
         }
-        else {
+        else {  
             singleFridgeView.isHidden = true
             leftBinView.isHidden = false
             rightBinView.isHidden = false
@@ -121,14 +121,21 @@ class HomeViewController: UIViewController,UINavigationControllerDelegate {
         voltageLabel.layer.cornerRadius = 5
         voltageLabel.backgroundColor = UIColor.lightGray.withAlphaComponent(0.5)
         voltageLabel.clipsToBounds = true
+        
         leftBinCurrentTemperature.layer.cornerRadius = 5
         leftBinCurrentTemperature.backgroundColor = UIColor.lightGray.withAlphaComponent(0.7)
         leftBinCurrentTemperature.layer.borderWidth = 3
         leftBinCurrentTemperature.layer.borderColor = UIColor.lightGray.cgColor
+        
         rightBinCurrentTemperature.layer.cornerRadius = 5
         rightBinCurrentTemperature.backgroundColor = UIColor.lightGray.withAlphaComponent(0.7)
         rightBinCurrentTemperature.layer.borderWidth = 3
         rightBinCurrentTemperature.layer.borderColor = UIColor.lightGray.cgColor
+        
+        singleBinCurrentTemperature.layer.cornerRadius = 5
+        singleBinCurrentTemperature.backgroundColor = UIColor.lightGray.withAlphaComponent(0.7)
+        singleBinCurrentTemperature.layer.borderWidth = 3
+        singleBinCurrentTemperature.layer.borderColor = UIColor.lightGray.cgColor
         
         NotificationCenter.default.addObserver(self, selector: #selector(HomeViewController.connectionChanged(_:)), name: NSNotification.Name(rawValue: BLEServiceChangedStatusNotification), object: nil)
         
@@ -170,13 +177,13 @@ class HomeViewController: UIViewController,UINavigationControllerDelegate {
                     Utility.shared.connectedDevice.isConnected = true
                     Utility.shared.readValues(forViewController: self)
                     self.deviceStatusLabel.text = "Device Connected"
-                  //  self.autoRefreshTimer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(self.update), userInfo: nil, repeats: true)
+                    self.autoRefreshTimer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(self.update), userInfo: nil, repeats: true)
                 } else {
                     self.deviceStatusLabel.text = "Device Disconnected"
-                   // if self.autoRefreshTimer != nil {
-                   //     self.autoRefreshTimer.invalidate()
-                   //     self.autoRefreshTimer = nil
-                    //}
+                    if self.autoRefreshTimer != nil {
+                        self.autoRefreshTimer.invalidate()
+                        self.autoRefreshTimer = nil
+                    }
                 }
             }
         });
@@ -226,18 +233,19 @@ class HomeViewController: UIViewController,UINavigationControllerDelegate {
     
     func setValues() {
         
-        self.rightBinCurrentTemperatureLabel.text = Utility.shared.connectedDevice.getRightBinCurrentTemp()
-        self.leftBinCurrentTemperatureLabel.text = Utility.shared.connectedDevice.getLeftBinCurrentTemp()
-        self.rightBinTempLabel.text = Utility.shared.connectedDevice.getRightBinTemp()
-        self.leftBinTempLabel.text = Utility.shared.connectedDevice.getLeftBinTemp()
         self.voltageLabel.text = Utility.shared.connectedDevice.voltage
-        
+        self.leftBinCurrentTemperatureLabel.text = Utility.shared.connectedDevice.getLeftBinCurrentTemp()
+        self.rightBinCurrentTemperatureLabel.text = Utility.shared.connectedDevice.getRightBinCurrentTemp()
+        self.singleBinCurrentTemperatureLabel.text = Utility.shared.connectedDevice.getLeftBinCurrentTemp()
+
         if Utility.shared.connectedDevice.onOffCode == "00" {
             powerButton.isSelected = false
             rightBinImageView.image = Fan.red
             leftBinImageView.image = Fan.red
+            singleBinImageView.image = Fan.red
             leftBinImageView.stopAnimatingGIF()
             rightBinImageView.stopAnimatingGIF()
+            singleBinImageView.stopAnimatingGIF()
         }
         else {
             self.powerButton.isSelected = true
@@ -247,15 +255,85 @@ class HomeViewController: UIViewController,UINavigationControllerDelegate {
                 rightBinImageView.animate(withGIFNamed: "fan_2")
             }
             
-            if Utility.shared.connectedDevice.onOffCode == "10"{
-                rightBinImageView.image = Fan.green
-                leftBinImageView.image = Fan.green
-                leftBinImageView.stopAnimatingGIF()
-                rightBinImageView.stopAnimatingGIF()
+            if !singleBinImageView.isAnimatingGIF {
+                singleBinImageView.animate(withGIFNamed: "fan_2")
             }
-            else if !self.leftBinImageView.isAnimating {
-                leftBinImageView.startAnimatingGIF()
-                rightBinImageView.startAnimatingGIF()
+            
+            if Utility.shared.connectedDevice.fridgeType == FRIDGETYPE.single {
+                self.singleBinTemplabel.text = Utility.shared.connectedDevice.getLeftBinTemp()
+
+                if Utility.shared.connectedDevice.onOffCode == "10"{
+                    singleBinImageView.image = Fan.green
+                    singleBinImageView.stopAnimatingGIF()
+                }
+                else if !self.leftBinImageView.isAnimating {
+                    singleBinImageView.startAnimatingGIF()
+                }
+            }
+            else if Utility.shared.connectedDevice.fridgeType == FRIDGETYPE.Dual {
+                
+                Utility.shared.connectedDevice.leftBinOn = true
+                Utility.shared.connectedDevice.rightBinOn = true
+                
+                self.rightBinTempLabel.text = Utility.shared.connectedDevice.getRightBinTemp()
+                self.leftBinTempLabel.text = Utility.shared.connectedDevice.getLeftBinTemp()
+                self.leftBinStatusLabel.text = "Tap to turn off bin"
+                self.rightBinStatusLabel.text = "Tap to turn off bin"
+
+                if Utility.shared.connectedDevice.onOffCode == "10"{
+                    rightBinImageView.image = Fan.green
+                    leftBinImageView.image = Fan.green
+                    leftBinImageView.stopAnimatingGIF()
+                    rightBinImageView.stopAnimatingGIF()
+                }
+                else if !self.leftBinImageView.isAnimating {
+                    leftBinImageView.startAnimatingGIF()
+                    rightBinImageView.startAnimatingGIF()
+                }
+            }
+            else if Utility.shared.connectedDevice.fridgeType == FRIDGETYPE.leftOff {
+               
+                Utility.shared.connectedDevice.leftBinOn = false
+                Utility.shared.connectedDevice.rightBinOn = true
+                
+                self.rightBinTempLabel.text = Utility.shared.connectedDevice.getRightBinTemp()
+                self.leftBinTempLabel.text = "--"
+                self.leftBinStatusLabel.text = "Tap to turn on bin"
+                self.rightBinStatusLabel.text = "Tap to turn off bin"
+                
+                if Utility.shared.connectedDevice.onOffCode == "10"{
+                    rightBinImageView.image = Fan.green
+                    leftBinImageView.image = Fan.red
+                    leftBinImageView.stopAnimatingGIF()
+                    rightBinImageView.stopAnimatingGIF()
+                }
+                else if !self.leftBinImageView.isAnimating {
+                    leftBinImageView.image = Fan.red
+                    leftBinImageView.stopAnimatingGIF()
+                    rightBinImageView.startAnimatingGIF()
+                }
+            }
+            else if Utility.shared.connectedDevice.fridgeType == FRIDGETYPE.rightOff {
+                
+                Utility.shared.connectedDevice.leftBinOn = true
+                Utility.shared.connectedDevice.rightBinOn = false
+                
+                self.leftBinTempLabel.text = Utility.shared.connectedDevice.getLeftBinTemp()
+                self.rightBinTempLabel.text = "--"
+                self.leftBinStatusLabel.text = "Tap to turn off bin"
+                self.rightBinStatusLabel.text = "Tap to turn on bin"
+                
+                if Utility.shared.connectedDevice.onOffCode == "10"{
+                    rightBinImageView.image = Fan.red
+                    leftBinImageView.image = Fan.green
+                    leftBinImageView.stopAnimatingGIF()
+                    rightBinImageView.stopAnimatingGIF()
+                }
+                else if !self.leftBinImageView.isAnimating {
+                    rightBinImageView.image = Fan.red
+                    rightBinImageView.stopAnimatingGIF()
+                    leftBinImageView.startAnimatingGIF()
+                }
             }
         }
         
@@ -270,6 +348,17 @@ class HomeViewController: UIViewController,UINavigationControllerDelegate {
     }
     
     // MARK: - Alert methods
+    
+    func displayAlert() {
+        let actionSheet: UIAlertController = UIAlertController(title: "", message: "Turning off both the bins are not supported as of now. Please turn on the other bin to off this one", preferredStyle: .alert)
+        
+        let cancelActionButton: UIAlertAction = UIAlertAction(title: "Ok", style: .cancel) { action -> Void in
+        }
+        
+        actionSheet.addAction(cancelActionButton)
+        
+        self.present(actionSheet, animated: true, completion: nil)
+    }
     
     func turnOffBin( onCompletion : @escaping (Bool) -> Void) {
         let actionSheet: UIAlertController = UIAlertController(title: "", message: "Do you want to Turn Off ?", preferredStyle: .actionSheet)
@@ -307,59 +396,46 @@ class HomeViewController: UIViewController,UINavigationControllerDelegate {
     
     // MARK : Gesture methods
     
-    @objc func pushViewController(gestureRecognizer: UITapGestureRecognizer) {
+    @objc func tapGestureDelegate(gestureRecognizer: UITapGestureRecognizer) {
         
         if gestureRecognizer.view == leftBinTempView {
             
-            if leftBinImageView.image == Fan.red {
-                self.leftBinImageView.image = Fan.green
-                leftBinImageView.startAnimatingGIF()
-                leftBinTempLabel.text = Utility.shared.connectedDevice.getLeftBinTemp()
-            }
-            else {
+            if Utility.shared.connectedDevice.leftBinOn && Utility.shared.connectedDevice.rightBinOn {
                 turnOffBin(onCompletion: {status in
                     DispatchQueue.main.async {
                         if status {
-                            self.leftBinImageView.image = Fan.red
-                            self.leftBinImageView.stopAnimatingGIF()
-                            self.leftBinTempLabel.text = "OFF"
+                            Utility.shared.connectedDevice.leftBinOn = false
+                            Utility.shared.setFridgeType(type: FRIDGETYPE.leftOff)
                         }
                     }
                 })
+            }
+            else if !Utility.shared.connectedDevice.leftBinOn {
+                Utility.shared.connectedDevice.leftBinOn = true
+                Utility.shared.setFridgeType(type: FRIDGETYPE.Dual)
+            }
+            else if !Utility.shared.connectedDevice.rightBinOn {
+                displayAlert()
             }
         }
         else if gestureRecognizer.view == rightBinTempView {
-            if rightBinImageView.image == Fan.red {
-                self.leftBinImageView.image = Fan.green
-                rightBinImageView.startAnimatingGIF()
-                rightBinTempLabel.text = Utility.shared.connectedDevice.getRightBinTemp()
-            }
-            else {
+      
+            if Utility.shared.connectedDevice.rightBinOn && Utility.shared.connectedDevice.leftBinOn {
                 turnOffBin(onCompletion: {status in
                     DispatchQueue.main.async {
                         if status {
-                            self.rightBinImageView.image = Fan.red
-                            self.rightBinImageView.stopAnimatingGIF()
-                            self.rightBinTempLabel.text = "OFF"
+                            Utility.shared.connectedDevice.rightBinOn = false
+                            Utility.shared.setFridgeType(type: FRIDGETYPE.rightOff)
                         }
                     }
                 })
             }
-        }
-        else if gestureRecognizer.view == singleFridgeTempView {
-            if singleBinFanButton.isSelected {
-                singleBinFanButton.isSelected = false
-                singleBinTemplabel.text = "\(Utility.shared.connectedDevice.singleBinTemp)C"
+            else if !Utility.shared.connectedDevice.rightBinOn {
+                Utility.shared.connectedDevice.rightBinOn = true
+                Utility.shared.setFridgeType(type: FRIDGETYPE.Dual)
             }
-            else {
-                turnOffBin(onCompletion: {status in
-                    DispatchQueue.main.async {
-                        if status {
-                            self.singleBinFanButton.isSelected = true
-                            self.singleBinTemplabel.text = "OFF"
-                        }
-                    }
-                })
+            else if !Utility.shared.connectedDevice.leftBinOn {
+                displayAlert()
             }
         }
     }
@@ -367,7 +443,7 @@ class HomeViewController: UIViewController,UINavigationControllerDelegate {
     // MARK: - IBAction
     
     @IBAction func userManualButtonAction(_ sender: UIButton) {
-       Utility.shared.setFridgeType()
+
     }
     
     @IBAction func powerButton(_ sender: UIButton) {
@@ -406,10 +482,10 @@ class HomeViewController: UIViewController,UINavigationControllerDelegate {
                     if let bleService = btDiscoverySharedInstance.cManager {
                     Utility.shared.removePeripheral()
                     Utility.shared.connectedDevice.name = ""
-                  //  if self.autoRefreshTimer != nil {
-                  //      self.autoRefreshTimer.invalidate()
-                 //       self.autoRefreshTimer = nil
-                   // }
+                    if self.autoRefreshTimer != nil {
+                        self.autoRefreshTimer.invalidate()
+                        self.autoRefreshTimer = nil
+                    }
                     bleService.cancelPeripheralConnection(Utility.shared.connectedPeripheral)
                         self.navigationController?.popViewController(animated: true)
                     }
@@ -452,25 +528,24 @@ class HomeViewController: UIViewController,UINavigationControllerDelegate {
             Utility.shared.connectedDevice.rightBinTemp = Utility.shared.connectedDevice.rightBinTemp + 1
             rightBinTempLabel.text = Utility.shared.connectedDevice.getRightBinTemp()
         }
-        else if sender == singleFridgeDownButton && !singleBinFanButton.isSelected {
+        else if sender == singleFridgeDownButton && singleBinImageView.image != Fan.red {
             
-            if Utility.shared.connectedDevice.singleBinTemp == FRIDGE.minimumTemp {
+            if Utility.shared.connectedDevice.leftBinTemp == FRIDGE.minimumTemp {
                 return
             }
-            Utility.shared.connectedDevice.singleBinTemp = Utility.shared.connectedDevice.singleBinTemp - 1
-            singleBinTemplabel.text = "\(Utility.shared.connectedDevice.singleBinTemp)"
+            Utility.shared.connectedDevice.leftBinTemp = Utility.shared.connectedDevice.leftBinTemp - 1
+            singleBinTemplabel.text = Utility.shared.connectedDevice.getLeftBinTemp()
         }
-        else if sender == singleFridgeUpButton && !singleBinFanButton.isSelected {
+        else if sender == singleFridgeUpButton && singleBinImageView.image != Fan.red {
             
-            if Utility.shared.connectedDevice.singleBinTemp == FRIDGE.maximumTemp {
+            if Utility.shared.connectedDevice.leftBinTemp == FRIDGE.maximumTemp {
                 return
             }
-            Utility.shared.connectedDevice.singleBinTemp = Utility.shared.connectedDevice.singleBinTemp + 1
-            singleBinTemplabel.text = "\(Utility.shared.connectedDevice.singleBinTemp)"
+            Utility.shared.connectedDevice.leftBinTemp = Utility.shared.connectedDevice.leftBinTemp + 1
+            singleBinTemplabel.text = Utility.shared.connectedDevice.getLeftBinTemp()
         }
         
         Utility.shared.writeValues()
-        inputTextView.text = "CHECK WORD CALCULATION : \(Utility.shared.connectedDevice.formWriteHexString().1)\n\nTEMP CHANGE : \(Utility.shared.connectedDevice.formWriteHexString().0)"
     }
     
     
@@ -512,7 +587,6 @@ class HomeViewController: UIViewController,UINavigationControllerDelegate {
         
         if (sender as! UIButton).tag != 67 {
             Utility.shared.writeValues()
-            inputTextView.text = "\nBATTERY PROTECTION CHANGE : \(Utility.shared.connectedDevice.formWriteHexString().0)"
         }
     }
     
@@ -549,7 +623,6 @@ class HomeViewController: UIViewController,UINavigationControllerDelegate {
         
         if (sender as! UIButton).tag != 67 {
             Utility.shared.writeValues()
-            inputTextView.text = "\nCOOLING SPEED CHANGE : \(Utility.shared.connectedDevice.formWriteHexString().0)"
         }
     }
     
@@ -558,10 +631,10 @@ class HomeViewController: UIViewController,UINavigationControllerDelegate {
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         
         DispatchQueue.main.async {
-           // if self.autoRefreshTimer != nil {
-            //    self.autoRefreshTimer.invalidate()
-            //    self.autoRefreshTimer = nil
-          //  }
+            if self.autoRefreshTimer != nil {
+                self.autoRefreshTimer.invalidate()
+                self.autoRefreshTimer = nil
+            }
         }
     }
 }
@@ -576,13 +649,14 @@ extension HomeViewController : didUpdateValueDelegate {
             
             let hexArray = hexString.formHexArr()
             
-            if hexArray[8] != "9b" && hexArray[8] != "9a" {
+            if hexArray[8] != "9b" && hexArray[8] != "9a" && hexArray[8] != "9e" && hexArray.count >= 15 {
                 
+                Utility.shared.connectedDevice.fridgeType = hexArray[2]
                 Utility.shared.connectedDevice.rightBinCurrentTemp = hexArray[9].getTemperatureInCelcius()
                 Utility.shared.connectedDevice.leftBinCurrentTemp = hexArray[10].getTemperatureInCelcius()
                 Utility.shared.connectedDevice.rightBinTemp = hexArray[11].getTemperatureInCelcius()
                 Utility.shared.connectedDevice.leftBinTemp = hexArray[12].getTemperatureInCelcius()
-                Utility.shared.connectedDevice.voltage = "\(hexArray[13]).\(hexArray[14])V"
+                Utility.shared.connectedDevice.voltage = "\(hexArray[13].hexToDecimalValue()).\(hexArray[14].hexToDecimalValue())V"
                 Utility.shared.connectedDevice.splitAndSaveDeviceParameter(value: hexArray[15])
                 
                 self.setValues()

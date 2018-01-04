@@ -16,6 +16,7 @@ class Utility: NSObject {
     var connectedPeripheral : CBPeripheral!
     var connectedDevice : Device!
     var isReadingTemperatureCurve = false
+    var isSettingFridgeType = false
     var peripheralArray : [CBPeripheral] = []
     var delegate : deviceAddedToListDelegate?
     
@@ -70,6 +71,7 @@ class Utility: NSObject {
     func readValues(forViewController controller:UIViewController) {
         if let bleService = btDiscoverySharedInstance.bleService {
             isReadingTemperatureCurve = false
+            isSettingFridgeType = false
             bleService.writePosition(hexString: connectedDevice.formReadHexString())
             bleService.delegate = controller as? didUpdateValueDelegate
         }
@@ -85,13 +87,14 @@ class Utility: NSObject {
     
     func writeValues() {
         if let bleService = btDiscoverySharedInstance.bleService {
-            bleService.writePosition(hexString: connectedDevice.formWriteHexString().0)
+            bleService.writePosition(hexString: connectedDevice.formWriteHexString())
         }
     }
     
-    func setFridgeType() {
+    func setFridgeType(type : String) {
         if let bleService = btDiscoverySharedInstance.bleService {
-            bleService.writePosition(hexString: connectedDevice.formSetRefregiratorTypeHexString())
+            isSettingFridgeType = true
+            bleService.writePosition(hexString: connectedDevice.formSetRefregiratorTypeHexString(fridgeType: type))
         }
     }
 }
